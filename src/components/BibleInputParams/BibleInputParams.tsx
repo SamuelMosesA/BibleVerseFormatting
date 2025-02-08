@@ -17,8 +17,8 @@ export const BibleInputParams: React.FC<InputParamState> = ({
     setBoxHeight,
     boxWidth,
     setBoxWidth,
-    fontUrl,
-    setFontUrl,
+    fontName: fontUrl,
+    setFontName: setFontUrl,
     fontSize,
     setFontSize,
 
@@ -67,9 +67,9 @@ export const BibleInputParams: React.FC<InputParamState> = ({
                 justify="center" align="center">
                 <Stack >
                     <div>
-                        <InputLabel>Google Fonts URL</InputLabel>
+                        <InputLabel>Google Font Name</InputLabel>
                         <TextInput
-                            placeholder="paste URL"
+                            placeholder="paste Name"
                         value={fontUrl}
                         onChange={(e) => setFontUrl(e.target.value)}
                         />

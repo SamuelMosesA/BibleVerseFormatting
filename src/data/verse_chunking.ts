@@ -9,7 +9,7 @@
  * @param fontFamily - the font family name (must match the one loaded from your google font url).
  * @returns An array of strings where each string is HTML with <b> for the verse number and <br> between lines.
  */
-function chunkVerses(
+export default function chunkVerses(
     verses: { [verseNumber: string]: string },
     boxWidth: number,
     boxHeight: number,
@@ -47,6 +47,7 @@ function chunkVerses(
   
       // Switch to the normal font for subsequent words.
       ctx.font = `${fontSize}px ${fontFamily}`;
+      console.log(ctx.font)
   
       // Process each word (plus a trailing space).
       for (const word of words) {

@@ -17,13 +17,13 @@ const myColor: MantineColorsTuple = [
 
 export const theme = createTheme({
   primaryColor: 'yellow',
-  fontFamily: 'Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif',
+  fontFamily: 'Solway, Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif',
   defaultRadius: 'md',
   colors: {
     'yellow': myColor,
   },
   headings: {
-    fontFamily: 'Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif',
+    fontFamily: 'Solway, Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif',
     fontWeight: 'bold',
   },
   components: {

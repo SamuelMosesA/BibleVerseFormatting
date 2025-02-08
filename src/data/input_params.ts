@@ -12,8 +12,8 @@ export interface InputParamState {
     boxWidth: string;
     setBoxWidth: React.Dispatch<React.SetStateAction<string>>;
 
-    fontUrl: string;
-    setFontUrl: React.Dispatch<React.SetStateAction<string>>;
+    fontName: string;
+    setFontName: React.Dispatch<React.SetStateAction<string>>;
 
     fontSize: string;
     setFontSize: React.Dispatch<React.SetStateAction<string>>;
@@ -22,11 +22,11 @@ export interface InputParamState {
 
 // Custom hook to manage input parameters
 export function useInputParams(): InputParamState {
-    const [biblePassage, setBiblePassage] = useState<string>('');
-    const [boxHeight, setBoxHeight] = useState<string>('');
-    const [boxWidth, setBoxWidth] = useState<string>('');
-    const [fontUrl, setFontUrl] = useState<string>('');
-    const [fontSize, setFontSize] = useState<string>('');
+    const [biblePassage, setBiblePassage] = useState<string>('Gen 1:1 - 1:2');
+    const [boxHeight, setBoxHeight] = useState<string>('240');
+    const [boxWidth, setBoxWidth] = useState<string>('1530');
+    const [fontName, setFontName] = useState<string>('Solway');
+    const [fontSize, setFontSize] = useState<string>('24');
 
     return {
         biblePassage,
@@ -35,8 +35,8 @@ export function useInputParams(): InputParamState {
         setBoxHeight,
         boxWidth,
         setBoxWidth,
-        fontUrl,
-        setFontUrl,
+        fontName: fontName,
+        setFontName: setFontName,
         fontSize,
         setFontSize,
     };
