@@ -1,0 +1,7 @@
+.text_input {
+    color: pink;
+}
+
+.text_input::placeholder{
+    color: darkkhaki;
+}

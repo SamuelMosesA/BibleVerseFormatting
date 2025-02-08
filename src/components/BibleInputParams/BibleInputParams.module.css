@@ -1,0 +1,29 @@
+.input_label {
+    padding-top: 0.5dvh;
+    padding-bottom: 0.5dvh;
+}
+
+.bible_passage_input_label {
+    padding-top: 0.5dvh;
+    padding-bottom: 0.5dvh;
+    font-size: x-large;
+    color: black;
+}
+
+.input_group {
+background-color: var(--mantine-color-gray-7);
+border-radius: 5%;
+height: 300px;
+padding-left: 5%;
+padding-right: 5%;
+font-weight: bold;
+}
+
+.bible_passage_group{
+background-color: var(--mantine-primary-color-6);
+border-radius: 5%;
+height: 300px;
+padding-left: 5%;
+padding-right: 5%;
+font-weight: bold;
+}
