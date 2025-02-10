@@ -133,14 +133,11 @@ export default function chunkVerses(
 
   const chunks: FormattedChunkType[] = [];
 
-  // It’s usually best to process verses in order. If the keys are numeric strings, sort them:
-  const verseEntries = verses.sort((a, b) => Number(a.verseNumber) - Number(b.verseNumber));
-
   let currentChunk: FormattedLine[] = []
 
   let index = 0
-  while(index< verseEntries.length){
-    let verse = verseEntries.at(index)
+  while(index< verses.length){
+    let verse = verses.at(index)
     if (verse == undefined) break;
     let formattedVerseLine = tryChunkVerse(ctx, verse, boxWidth, boxHeight, fontSize, lineHeightMult, fontName, xPostiton, currentChunkHeight);
     if (formattedVerseLine == null || formattedVerseLine.format.length == 0) {

@@ -27,7 +27,7 @@ export interface InputParamState {
 export function useInputParams(): InputParamState {
     const [biblePassage, setBiblePassage] = useState<string>('Gen 1:1 - 1:2');
     const [boxHeight, setBoxHeight] = useState<string>('180');
-    const [boxWidth, setBoxWidth] = useState<string>('1100');
+    const [boxWidth, setBoxWidth] = useState<string>('1150');
     const [fontName, setFontName] = useState<string>('Solway');
     const [fontSize, setFontSize] = useState<string>('24');
     const [lineHeightMult, setLineHeightMult] = useState<string>('1.4');

@@ -39,11 +39,8 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
     if (!ctx) return;
     ctx.clearRect(0, 0, width, height);
         
-    ctx.globalCompositeOperation = 'darken'
-    ctx.fillStyle = "#fffdaf";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     // Set the fill style explicitly.
-    ctx.fillStyle = "#000";
+    ctx.fillStyle = "#ffffff";
 
     // Ensure the font is loaded. Here we assume the Google font is loaded
     // and available as 'CustomFont'. You can change this as needed.
@@ -95,10 +92,10 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
     const [isChecked, setIsChecked] = useState(false);
   return (
     <Card shadow="sm" padding="lg" radius="md" withBorder mt="md">
-      <Card.Section p="1dv">
+      <Card.Section p="lg">
         {/* Canvas element with a border for visual debugging */}
-        <canvas ref={canvasRef} style={{ border: '1px solid #000' }} />
-        <Container p="1dvw">
+        <canvas ref={canvasRef} style={{ border: '1px solid rgba(238, 255, 0, 0.2)' }} />
+        <Container p="md">
           <Center>
             <Group>
               <CopyButton value='htmlBlob'>
