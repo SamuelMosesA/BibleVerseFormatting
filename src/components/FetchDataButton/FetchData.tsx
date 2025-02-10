@@ -1,17 +1,17 @@
 
 import React from 'react';
 import { Center, Button } from '@mantine/core';
-import classes from './SubmitButton.module.css'
+import classes from './FetchData.module.css'
 
-export interface FormatButtonProps {
+export interface FetchDataButtonProps {
   onClick: React.MouseEventHandler<HTMLButtonElement>;
 }
 
-export function FormatButton({ onClick }: FormatButtonProps) {
+export function FetchDataButton({ onClick }: FetchDataButtonProps) {
   return (
-    <Center className={classes.format_button}>
+    <Center className={classes.fetch_button}>
       <Button color="pink" size="lg" w="200px" onClick={onClick}>
-        Format
+        Fetch Data
       </Button>
     </Center>
   );

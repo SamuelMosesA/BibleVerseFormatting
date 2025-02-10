@@ -21,6 +21,8 @@ export const BibleInputParams: React.FC<InputParamState> = ({
     setFontName: setFontUrl,
     fontSize,
     setFontSize,
+    lineHeightMult,
+    setLineHeightMult
 
 }) => {
 
@@ -81,6 +83,15 @@ export const BibleInputParams: React.FC<InputParamState> = ({
                             type='number'
                         value={fontSize}
                         onChange={(e) => setFontSize(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <InputLabel>Line Height Mult</InputLabel>
+                        <TextInput
+                            placeholder="float 1.2"
+                            type='number'
+                        value={lineHeightMult}
+                        onChange={(e) => setLineHeightMult(e.target.value)}
                         />
                     </div>
                 </Stack>

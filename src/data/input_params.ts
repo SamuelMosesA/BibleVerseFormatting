@@ -17,16 +17,20 @@ export interface InputParamState {
 
     fontSize: string;
     setFontSize: React.Dispatch<React.SetStateAction<string>>;
+
+    lineHeightMult: string;
+    setLineHeightMult: React.Dispatch<React.SetStateAction<string>>
 }
 
 
 // Custom hook to manage input parameters
 export function useInputParams(): InputParamState {
     const [biblePassage, setBiblePassage] = useState<string>('Gen 1:1 - 1:2');
-    const [boxHeight, setBoxHeight] = useState<string>('240');
-    const [boxWidth, setBoxWidth] = useState<string>('1530');
+    const [boxHeight, setBoxHeight] = useState<string>('180');
+    const [boxWidth, setBoxWidth] = useState<string>('1100');
     const [fontName, setFontName] = useState<string>('Solway');
     const [fontSize, setFontSize] = useState<string>('24');
+    const [lineHeightMult, setLineHeightMult] = useState<string>('1.4');
 
     return {
         biblePassage,
@@ -39,5 +43,7 @@ export function useInputParams(): InputParamState {
         setFontName: setFontName,
         fontSize,
         setFontSize,
+        lineHeightMult,
+        setLineHeightMult
     };
 }

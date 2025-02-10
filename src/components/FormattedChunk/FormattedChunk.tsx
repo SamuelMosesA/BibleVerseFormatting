@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Card, Container, Center, Group, CopyButton, Checkbox, Button, Text } from '@mantine/core';
+import { FormattedChunkType, generateHTML} from '@/data/verse_chunking';
 
 export interface FormattedChunkProps {
-  formattedText: string;
+  formattedText: FormattedChunkType;
   boxWidth: string;   // e.g., "500"
   boxHeight: string;  // e.g., "300"
   fontName: string;
   fontSize: string;   // e.g., "20"
+  lineHeightMult: string
 }
 
 /**
@@ -19,6 +21,7 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
   boxHeight,
   fontName,
   fontSize,
+  lineHeightMult
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -46,7 +49,7 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
     // and available as 'CustomFont'. You can change this as needed.
     const fontFamily = fontName; // Change to match your font-family
     const fontSizePx = Number(fontSize);
-    const lineHeight = fontSizePx * 1.2;
+    const lineHeight = fontSizePx * Number(lineHeightMult);
 
     // Clear the canvas
 
@@ -54,42 +57,27 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
     let y = fontSizePx;
 
     // Split the formatted text into lines (using <br> as a delimiter).
-    const lines = formattedText.split('<br>');
+    const lines = formattedText;
 
     for (const line of lines) {
       let x = 0;
-      if (line.includes('<b>')) {
+      for (const word of line){
         // Extract bold and normal text (assuming bold at the beginning).
-        const boldMatch = line.match(/^<b>(.*?)<\/b>\s*(.*)$/);
-        if (boldMatch) {
-          const boldText = boldMatch[1];
-          const normalText = boldMatch[2];
-
+        if (word.isBold) {
+          const boldText = word.text + " "
           // Draw bold text.
           ctx.font = `bold ${fontSizePx}px ${fontFamily}`;
           ctx.fillText(boldText, x, y);
-          const boldWidth = ctx.measureText(boldText).width;
-          x += boldWidth;
-
-          // Add a space after the bold text.
-          const spaceWidth = ctx.measureText(' ').width;
-          x += spaceWidth;
-
-          // Draw normal text.
-          ctx.font = `${fontSizePx}px ${fontFamily}`;
-          ctx.fillText(normalText, x, y);
+          x += ctx.measureText(boldText).width;
         } else {
           // Fallback: draw the entire line normally.
           ctx.font = `${fontSizePx}px ${fontFamily}`;
-          ctx.fillText(line, x, y);
+          const normalText = word.text + " "
+          ctx.fillText(normalText, x, y);
+          x += ctx.measureText(normalText).width;
         }
-      } else {
-        // No bold formatting, draw normally.
-        ctx.font = `${fontSizePx}px ${fontFamily}`;
-        ctx.fillText(line, x, y);
       }
       y += lineHeight;
-      if (y + lineHeight > height) break;
     }
   }, [formattedText, boxWidth, boxHeight, fontName, fontSize]);
 
@@ -113,9 +101,9 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
         <Container p="1dvw">
           <Center>
             <Group>
-              <CopyButton value={formattedText}>
+              <CopyButton value='htmlBlob'>
                 {({ copied, copy }) => (
-                  <Button color={copied ? 'teal' : 'blue'} onClick={() =>copyRichText(formattedText)}>
+                  <Button color={copied ? 'teal' : 'blue'} onClick={() =>copyRichText(generateHTML(formattedText, fontSize + " px", fontName))}>
                     {copied ? 'Copied verses' : 'Copy verses'}
                   </Button>
                 )}
