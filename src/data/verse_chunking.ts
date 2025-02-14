@@ -1,20 +1,5 @@
-export interface FormattedWord {
-  text: string;
-  isBold: boolean;
-}
-export type FormattedLine = FormattedWord[]
-export type FormattedChunkType = FormattedLine[]
+import { FormattedChunkType, FormattedLine, FormattedVerse, Verse } from "./types";
 
-export interface Verse {
-  verseNumber: string;
-  text: string;
-}
-
-export interface FormattedVerse {
-  format: FormattedLine[],
-  endX: number,
-  endY: number
-}
 function tryChunkVerse(
   ctx: CanvasRenderingContext2D,
   verse: Verse,
@@ -43,7 +28,7 @@ function tryChunkVerse(
 
   let line: FormattedLine = []
   // Now process the verse text by splitting it into words.
-  let verseText = verse.text.replace("\n", " \n ").replace("\t", " \t ")
+  let verseText = verse.text.replaceAll("\n", " \n ").replaceAll("\t", " \t ")
   const words = verseText.split(/ +/);
   // For measurement purposes, we will accumulate the pixel width.
   lineWidth += boldWidth;
@@ -55,6 +40,9 @@ function tryChunkVerse(
   // Process each word (plus a trailing space).
   for (const word of words) {
     let trimmedWord = word.replace(/^( +)|( +)$/g, '');
+    if(trimmedWord == "\t"){
+      trimmedWord = " "
+    }
     const wordWithSpace = trimmedWord + ' ';
     const wordWidth = ctx.measureText(wordWithSpace).width;
     if ((lineWidth + wordWidth > boxWidth) || trimmedWord == "\n") {
@@ -103,6 +91,13 @@ function tryChunkVerse(
 }
 
 
+function removeTrailingNewline(chunk: FormattedChunkType){
+  let lastLine = chunk[chunk.length-1]
+  if(lastLine[lastLine.length-1].text.search("\n") > 0){
+    console.log(lastLine[lastLine.length -1 ])
+  }
+}
+
 /**
  * Given a set of verses and canvas parameters, returns a list of HTML-formatted strings.
  * Each string is a “chunk” that will fit into a canvas of boxWidth x boxHeight.
@@ -140,6 +135,9 @@ export default function chunkVerses(
     let verse = verses.at(index)
     if (verse == undefined) break;
     let formattedVerseLine = tryChunkVerse(ctx, verse, boxWidth, boxHeight, fontSize, lineHeightMult, fontName, xPostiton, currentChunkHeight);
+    if (xPostiton == 0 && currentChunkHeight == lineHeight && formattedVerseLine == null){
+      throw {"verse too large": verse}
+    }
     if (formattedVerseLine == null || formattedVerseLine.format.length == 0) {
       chunks.push(currentChunk)
       currentChunk = []
@@ -159,27 +157,31 @@ export default function chunkVerses(
   }
 
   chunks.push(currentChunk)
+  console.log(chunks)
   return chunks;
 }
+
+
+function formatHtmlLine(line: FormattedLine):string{
+      return `${line
+              .map((word) =>
+                word.isBold ? `<b>${word.text.trim()}</b>` : word.text
+              )
+              .join(" ")}`
+    }
 
 export const generateHTML = (
   chunk: FormattedChunkType,
   fontSize: string = "16px",
   fontFamily: string = "Arial, sans-serif"
 ): string => {
-  return `
+  let str = `
     <div style="font-size: ${fontSize}; font-family: ${fontFamily};">
-      ${chunk
-        .map(
-          (line) =>
-            `${line
-              .map((word) =>
-                word.isBold ? `<b>${word.text}</b>` : word.text
-              )
-              .join(" ")}<br>`
-        )
-        .join("")}
-    </div>
+      ${chunk.slice(0,-1)
+        .map((line) =>{ return formatHtmlLine(line) + "<br>" })
+        .join("")}${formatHtmlLine(chunk[chunk.length-1])}</div>
   `;
+  console.log(str)
+  return str
 };
 

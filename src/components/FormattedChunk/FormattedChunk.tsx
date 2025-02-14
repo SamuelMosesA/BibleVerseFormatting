@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Card, Container, Center, Group, CopyButton, Checkbox, Button, Text } from '@mantine/core';
-import { FormattedChunkType, generateHTML} from '@/data/verse_chunking';
+import { generateHTML} from '@/data/verse_chunking';
+import { FormattedChunkType } from "@/data/types";
 
 export interface FormattedChunkProps {
   formattedText: FormattedChunkType;
@@ -40,7 +41,7 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
     ctx.clearRect(0, 0, width, height);
         
     // Set the fill style explicitly.
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = "#333A5D";
 
     // Ensure the font is loaded. Here we assume the Google font is loaded
     // and available as 'CustomFont'. You can change this as needed.
@@ -61,7 +62,7 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
       for (const word of line){
         // Extract bold and normal text (assuming bold at the beginning).
         if (word.isBold) {
-          const boldText = word.text + " "
+          const boldText = word.text
           // Draw bold text.
           ctx.font = `bold ${fontSizePx}px ${fontFamily}`;
           ctx.fillText(boldText, x, y);
@@ -89,9 +90,28 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
       console.error("Failed to copy:", err);
     });
   };
+  const copyImage = (canvas: HTMLCanvasElement | null) => {
+  if(canvas == null){
+      return console.error("No data in blob");
+  }
+  canvas.toBlob((blob) => {
+    if(blob == null){
+      return console.error("No data in blob");
+    }
+    const data = new ClipboardItem({ "image/png": blob });
+    navigator.clipboard.write([data]).then(() => {
+      console.log("HTML copied as image!");
+    }).catch(err => {
+      console.error("Failed to copy:", err);
+    });
+  }
+  )
+
+
+  };
     const [isChecked, setIsChecked] = useState(false);
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder mt="md">
+    <Card shadow="sm" padding="lg" radius="md" withBorder mt="md" bg="white">
       <Card.Section p="lg">
         {/* Canvas element with a border for visual debugging */}
         <canvas ref={canvasRef} style={{ border: '1px solid rgba(238, 255, 0, 0.2)' }} />
@@ -101,7 +121,14 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
               <CopyButton value='htmlBlob'>
                 {({ copied, copy }) => (
                   <Button color={copied ? 'teal' : 'blue'} onClick={() =>copyRichText(generateHTML(formattedText, fontSize + " px", fontName))}>
-                    {copied ? 'Copied verses' : 'Copy verses'}
+                    {copied ? 'Copied text' : 'Copy text'}
+                  </Button>
+                )}
+              </CopyButton>
+              <CopyButton value='htmlBlob'>
+                {({ copied, copy }) => (
+                  <Button color={copied ? 'teal' : 'blue'} onClick={() =>copyImage(canvasRef.current)}>
+                    {copied ? 'Copied image' : 'Copy image'}
                   </Button>
                 )}
               </CopyButton>
@@ -110,10 +137,10 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
               onChange={() => setIsChecked(!isChecked)}
               styles={{
                 input: {
-                  backgroundColor: isChecked ? "transparent" : "#1DB954", // Fill when unchecked
-                  borderColor: isChecked ? "#1DB954" : "transparent", // Border when checked
+                  backgroundColor: isChecked ? "#1DB954" : "white", // Fill when unchecked
+                  borderColor: "black", // Border when checked
                 },
-                label: { color: isChecked ? "#1DB954" : "white" }, // Change text color accordingly
+                label: { color: isChecked ? "#1DB954" : "black" }, // Change text color accordingly
               }}
               />
             </Group>
