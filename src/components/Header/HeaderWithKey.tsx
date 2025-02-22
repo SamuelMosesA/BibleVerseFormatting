@@ -2,7 +2,15 @@ import { Group, Container, PasswordInput, Flex } from '@mantine/core';
 import classes from './HeaderWithKey.module.css';
 
 
-export function HeaderWithKey() {
+export interface PasswordInput{
+password: string; 
+setPassword: React.Dispatch<React.SetStateAction<string>>
+}
+
+export const HeaderWithKey: React.FC<PasswordInput> = ({
+    password,
+    setPassword
+}) =>{
     return (
         <header className={classes.header}>
             <Container className={classes.inner}>
@@ -17,6 +25,8 @@ export function HeaderWithKey() {
                             size='lg'
                             radius="md"
                             placeholder="Password"
+                            value={password}
+                            onChange={(e)=>setPassword(e.target.value)}
                         />
                     </Container>
                 </Group>

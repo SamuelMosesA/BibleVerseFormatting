@@ -16,12 +16,13 @@ import { get_bible_verses_from_api } from '@/data/api_request';
  * In a real app you’d fetch data from your backend.
  */
 const getVersesFromPassage = async (
-  biblePassage: string
+  biblePassage: string,
+  password: string
 ): Promise<Verse[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(
-          get_bible_verses_from_api(biblePassage)
+          get_bible_verses_from_api(biblePassage, password)
       );
     }, 500);
   });
@@ -33,10 +34,11 @@ export function HomePage() {
   const [chunks, setChunks] = useState<FormattedChunkType[]>([]);
   const [apiVerses, setApiVerses] = useState<Verse[]>([]);
   const [needsFormatting, setNeedsFormatting] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>("");
 
 
  const fetchAndSetBiblePassageData = async () => {
-      const data = await getVersesFromPassage(input_params.biblePassage)
+      const data = await getVersesFromPassage(input_params.biblePassage, password);
       setApiVerses(data);
       setNeedsFormatting(true)
   };
@@ -44,7 +46,6 @@ export function HomePage() {
 
   const handleFormat = async () => {
     if (!input_params.biblePassage) {
-      console.error("No bible passage provided!");
       return;
     }
 
@@ -71,7 +72,7 @@ export function HomePage() {
 
   return (
     <>
-      <HeaderWithKey />
+      <HeaderWithKey {...{password, setPassword}}/>
       <BibleInputParams {...input_params} />
       <FetchDataButton onClick={fetchAndSetBiblePassageData} />
       <Center mt="2dvh">

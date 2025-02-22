@@ -19,10 +19,117 @@ function parse_api_result(passage_str: string): Verse[]{
 }
 
 
+async function decodeApiKey(encodedString: string, password:string) {
+  try {
+    const decodedBytes = new Uint8Array(
+      atob(encodedString)
+        .split("")
+        .map((char) => char.charCodeAt(0))
+    );
 
-export async function get_bible_verses_from_api(query: string): Promise<Verse[]>{
+    const salt = decodedBytes.slice(0, 8);
+    const iv = decodedBytes.slice(8, 20);
+    const ciphertext = decodedBytes.slice(20);
+
+    const encoder = new TextEncoder();
+    const passwordBytes = encoder.encode(password);
+
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      passwordBytes,
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey"]
+    );
+
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["decrypt"]
+    );
+
+    const decryptedBuffer = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv },
+      key,
+      ciphertext
+    );
+
+    const decoder = new TextDecoder();
+    const apiKey = decoder.decode(decryptedBuffer);
+
+    return apiKey;
+  } catch (error) {
+    console.error("Decryption failed:", error);
+    return null;
+  }
+}
+
+
+async function encodeApiKey(apiKey: string, password: string) {
+  try {
+    const encoder = new TextEncoder();
+    const apiKeyBytes = encoder.encode(apiKey);
+    const passwordBytes = encoder.encode(password);
+
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      passwordBytes,
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey"]
+    );
+
+    const salt = crypto.getRandomValues(new Uint8Array(8));
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt"]
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      key,
+      apiKeyBytes
+    );
+
+    const combinedArray = new Uint8Array(salt.byteLength + iv.byteLength + ciphertext.byteLength);
+    combinedArray.set(salt, 0);
+    combinedArray.set(iv, salt.byteLength);
+    combinedArray.set(new Uint8Array(ciphertext), salt.byteLength + iv.byteLength);
+
+    // Convert the Uint8Array to a Base64 string
+    const base64Encoded = btoa(String.fromCharCode.apply(null, combinedArray));
+    return base64Encoded;
+
+  } catch (error) {
+    console.error("Encryption failed:", error);
+    return null;
+  }
+}
+
+
+export async function get_bible_verses_from_api(query: string, password: string): Promise<Verse[]>{
+    const encodedApiKey = "5+98EbNfsk1VtoaQuAL2bygcFlO+KAYF3a9WXIXPpUYrLzJZKY9673Qw3QjKrH7DWfVKVX4LEc2lnVEcpD6gZy2WcAiMk1KI7+abqQ=="
+    const apiKey = await decodeApiKey(encodedApiKey, password)
+
     const myHeaders = new Headers();
-    myHeaders.append("Authorization", "Token fb26e7cc3170938cc359c7cfe9fc3342c67709d5");
+    myHeaders.append("Authorization", "Token "+apiKey);
 
     const requestURL = new URL("https://api.esv.org/v3/passage/text/")
     requestURL.searchParams.append("q",query)
