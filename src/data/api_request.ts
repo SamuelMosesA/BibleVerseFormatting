@@ -133,7 +133,7 @@ export async function get_bible_verses_from_api(query: string, password: string)
     const myHeaders = new Headers();
     myHeaders.append("Authorization", "Token "+apiKey);
 
-    const requestURL = new URL("https://api.esv.org/v3/passage/text/")
+    const requestURL = new URL("/verse_api/v3/passage/text/")
     requestURL.searchParams.append("q",query)
     requestURL.searchParams.append("include-passage-references","false")
     requestURL.searchParams.append("include-footnotes","false")
