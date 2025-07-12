@@ -129,26 +129,31 @@ async function encodeApiKey(apiKey: string, password: string): Promise<string | 
 export async function get_bible_verses_from_api(query: string, password: string): Promise<Verse[]>{
     const encodedApiKey = "5+98EbNfsk1VtoaQuAL2bygcFlO+KAYF3a9WXIXPpUYrLzJZKY9673Qw3QjKrH7DWfVKVX4LEc2lnVEcpD6gZy2WcAiMk1KI7+abqQ=="
     const apiKey = await decodeApiKey(encodedApiKey, password)
-
+    
     const myHeaders = new Headers();
-    myHeaders.append("Authorization", "Token "+apiKey);
-
-    const requestURL = new URL("/verse_api/v3/passage/text/")
-    requestURL.searchParams.append("q",query)
-    requestURL.searchParams.append("include-passage-references","false")
-    requestURL.searchParams.append("include-footnotes","false")
-    requestURL.searchParams.append("include-footnote-body","false")
-    requestURL.searchParams.append("include-headings","false")
-    requestURL.searchParams.append("include-short-copyright","false")
-    requestURL.searchParams.append("include-selahs","false")
-    requestURL.searchParams.append("indent-poetry","true")
-    requestURL.searchParams.append("indent-using","tab")
-
-    let apiReqeust = new Request(requestURL, {
+    myHeaders.append("Authorization", "Token " + apiKey);
+    
+    // 1. Create search parameters
+    const params = new URLSearchParams();
+    params.append("q", query);
+    params.append("include-passage-references", "false");
+    params.append("include-footnotes", "false");
+    params.append("include-footnote-body", "false");
+    params.append("include-headings", "false");
+    params.append("include-short-copyright", "false");
+    params.append("include-selahs", "false");
+    params.append("indent-poetry", "true");
+    params.append("indent-using", "tab");
+    
+    // 2. Combine the base path with the parameters to create a relative URL string
+    const relativeURL = `/verse_api/v3/passage/text/?${params.toString()}`;
+    
+    // 3. Use the relative URL string in the Request object
+    const apiRequest = new Request(relativeURL, {
         method: "GET",
         headers: myHeaders,
         redirect: "follow"
-    })
+    });
 
     const response = await fetch(apiReqeust)
     if(!response.ok){
