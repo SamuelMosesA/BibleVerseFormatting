@@ -155,7 +155,7 @@ export async function get_bible_verses_from_api(query: string, password: string)
         redirect: "follow"
     });
 
-    const response = await fetch(apiReqeust)
+    const response = await fetch(apiRequest)
     if(!response.ok){
         throw {
             error_code: response.status,
