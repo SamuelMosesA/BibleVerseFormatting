@@ -8,7 +8,7 @@
   ## Not needed for static site generators.
   [[redirects]]
    from = "/verse_api/*"
-   to = "https://api.esv.org"
+   to = "https://api.esv.org/:splat"
    status = 200
 
   ## (optional) Settings for Netlify Dev
