@@ -9,22 +9,22 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './vitest.setup.mjs',
   },
-  server: {
-    proxy: {
-      '/verse_api': {
-        target: 'https://api.esv.org',
-        rewrite: (path) => path.replace(/^\/verse_api/, ''),
-        secure: true,
-        changeOrigin: true,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        },
-      },
-    },
-    cors: {
-      origin: '*',
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true,
-    },
-  },
+  // server: {
+  //   proxy: {
+  //     '/verse_api': {
+  //       target: 'https://api.esv.org',
+  //       rewrite: (path) => path.replace(/^\/verse_api/, ''),
+  //       secure: true,
+  //       changeOrigin: true,
+  //       headers: {
+  //         'Access-Control-Allow-Origin': '*',
+  //       },
+  //     },
+  //   },
+  //   cors: {
+  //     origin: '*',
+  //     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  //     credentials: true,
+  //   },
+  // },
 });
