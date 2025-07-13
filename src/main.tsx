@@ -1,26 +1,33 @@
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
+interface fontLink {
+  rel: string;
+  href: string;
+  crossorigin?: string;
+}
 
+const fontLinks: fontLink[] = [
+  { rel: 'preload', href: 'https://fonts.googleapis.com' },
+  { rel: 'preload', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
+  {
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Solway:wght@300;400;500;700;800&display=swap',
+  },
+];
 
 const addFontLinks = () => {
-  const preconnect1 = document.createElement('link');
-  preconnect1.rel = 'preconnect';
-  preconnect1.href = 'https://fonts.googleapis.com';
-  document.head.appendChild(preconnect1);
-
-  const preconnect2 = document.createElement('link');
-  preconnect2.rel = 'preconnect';
-  preconnect2.href = 'https://fonts.gstatic.com';
-  preconnect2.crossOrigin = 'anonymous';
-  document.head.appendChild(preconnect2);
-
-  const fontLink = document.createElement('link');
-  fontLink.rel = 'stylesheet';
-  fontLink.href = 'https://fonts.googleapis.com/css2?family=Solway:wght@300;400;500;700;800&display=swap';
-  document.head.appendChild(fontLink);
+  for (const fontLink of fontLinks) {
+    const link = document.createElement('link');
+    link.rel = fontLink.rel;
+    link.href = fontLink.href;
+    if (fontLink.crossorigin) {
+      link.crossOrigin = fontLink.crossorigin;
+    }
+    document.head.appendChild(link);
+  }
 };
 
-addFontLinks()
+addFontLinks();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

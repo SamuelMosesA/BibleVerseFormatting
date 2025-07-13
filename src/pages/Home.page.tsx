@@ -1,97 +1,129 @@
+// home.tsx
+
 import React, { useState, useEffect } from 'react';
-import { Center, Stack } from '@mantine/core';
-// Assume these components/hooks are defined/imported from your project
+import { Center, Stack, Button, Group } from '@mantine/core';
 import { HeaderWithKey } from '../components/Header/HeaderWithKey';
 import { BibleInputParams } from '../components/BibleInputParams/BibleInputParams';
-import { FetchDataButton} from '../components/FetchDataButton/FetchData';
+import { FetchDataButton } from '../components/FetchDataButton/FetchData';
 import { FormattedChunk } from '../components/FormattedChunk/FormattedChunk';
-import { useInputParams } from '../data/input_params';
-import  chunkVerses, {  } from '../data/verse_chunking'; // The helper function from the previous example
-import { FormattedChunkType, Verse } from "@/data/types";
-import { get_bible_verses_from_api } from '@/data/api_request';
+import { processAndRenderVerses, generateRichTextHTML } from '../data/verse_chunking';
+import { FormattedChunkType, InputParamState, Verse } from '@/data/types';
+import { get_bible_verses_from_api } from '@/data/esv_bible_api_data';
 
-/**
- * Simulate an API call that accepts a bible passage string and returns verses
- * in the form { verse_number: verse_text }.
- * In a real app you’d fetch data from your backend.
- */
-const getVersesFromPassage = async (
-  biblePassage: string,
-  password: string
-): Promise<Verse[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(
-          get_bible_verses_from_api(biblePassage, password)
-      );
-    }, 500);
+function getStorageValue<T>(key: string, defaultValue: T): T {
+  // Getting stored value
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem(key);
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Error parsing JSON from localStorage', error);
+        return defaultValue;
+      }
+    }
+  }
+  return defaultValue;
+}
+
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
+    return getStorageValue(key, defaultValue);
   });
+
+  useEffect(() => {
+    // Storing value
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+export function useInputParams(): InputParamState {
+  const [biblePassage, setBiblePassage] = useState<string>('John 3:16-18');
+  const [boxHeight, setBoxHeight] = useState<number>(220);
+  const [boxWidth, setBoxWidth] = useState<number>(1100);
+  const [fontName, setFontName] = useState<string>('Solway');
+  const [fontSize, setFontSize] = useState<number>(32);
+  const [lineHeightMult, setLineHeightMult] = useState<number>(1.4);
+
+  return { biblePassage, setBiblePassage, boxHeight, setBoxHeight, boxWidth, setBoxWidth, fontName, setFontName, fontSize, setFontSize, lineHeightMult, setLineHeightMult };
+}
+
+const getVersesFromPassage = async (biblePassage: string, password: string): Promise<Verse[]> => {
+    return get_bible_verses_from_api(biblePassage, password);
 };
 
-
 export function HomePage() {
-  const input_params = useInputParams();
-  const [chunks, setChunks] = useState<FormattedChunkType[]>([]);
-  const [apiVerses, setApiVerses] = useState<Verse[]>([]);
-  const [needsFormatting, setNeedsFormatting] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>("");
+  const inputParams = useInputParams();
+  const [, setApiVerses] = useState<Verse[]>([]);
+  const [password, setPassword] = useLocalStorage<string>('passkey', '');
 
+  // State to hold the final rendered canvases and the data for HTML export
+  const [canvases, setCanvases] = useState<HTMLCanvasElement[]>([]);
+  const [richTextData, setRichTextData] = useState<FormattedChunkType[]>([]);
 
- const fetchAndSetBiblePassageData = async () => {
-      const data = await getVersesFromPassage(input_params.biblePassage, password);
-      setApiVerses(data);
-      setNeedsFormatting(true)
-  };
-
-
-  const handleFormat = async () => {
-    if (!input_params.biblePassage) {
-      return;
-    }
-
+  const handleFetchAndProcess = async () => {
+    if (!inputParams.biblePassage || !password) {return;}
     try {
-      const boxWidth = Number(input_params.boxWidth);
-      const boxHeight = Number(input_params.boxHeight);
-      const fontSize = Number(input_params.fontSize);
-      const fontFamily = input_params.fontName;
-      const lineHeightMult = Number(input_params.lineHeightMult);
-      const formattedChunks = chunkVerses(apiVerses, boxWidth, boxHeight, fontSize, fontFamily, lineHeightMult);
-      setChunks(formattedChunks);
-      setNeedsFormatting(false);
+      const verses = await getVersesFromPassage(inputParams.biblePassage, password);
+      setApiVerses(verses);
+      
+      const fontString = `${inputParams.fontSize}px ${inputParams.fontName}`;
+      await document.fonts.load(fontString);
+
+      // This one function now does all the work
+      const { canvases: renderedCanvases, richTextData: data } = processAndRenderVerses(
+        verses,
+        inputParams.boxWidth,
+        inputParams.boxHeight,
+        inputParams.fontName,
+        inputParams.fontSize,
+        inputParams.lineHeightMult
+      );
+      setCanvases(renderedCanvases);
+      setRichTextData(data);
+
     } catch (error) {
-      console.error("Error formatting verses:", error);
+      console.error("Error fetching or processing verses:", error);
+      setCanvases([]);
+      setRichTextData([]);
     }
   };
 
-
-  useEffect(()=>{
-    handleFormat()
-    console.log("needs formatting")
-  },[needsFormatting])
-
+  const handleCopyRichText = () => {
+    if (richTextData.length === 0) {return;}
+    const html = generateRichTextHTML(richTextData);
+    const blob = new Blob([html], { type: 'text/html' });
+    navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })])
+        .then(() => console.log("HTML copied as rich text!"))
+        .catch(err => console.error("Failed to copy rich text:", err));
+  };
 
   return (
     <>
-      <HeaderWithKey {...{password, setPassword}}/>
-      <BibleInputParams {...input_params} />
-      <FetchDataButton onClick={fetchAndSetBiblePassageData} />
+      <HeaderWithKey {...{ password, setPassword }} />
+      <BibleInputParams {...inputParams} />
+      <Center>
+        <FetchDataButton onClick={handleFetchAndProcess} />
+      </Center>
+
+      {canvases.length > 0 && (
+        <Center mt="xl" mb="md">
+            <Button onClick={handleCopyRichText} size="md">
+                Copy All Verses as Rich Text
+            </Button>
+        </Center>
+      )}
+
       <Center mt="2dvh">
         <Stack>
-          {chunks.length > 0 ? (
-            chunks.map((chunk, index) => (
-              <FormattedChunk
-                key={index}
-                formattedText={chunk}
-                boxWidth={input_params.boxWidth}
-                boxHeight={input_params.boxHeight}
-                fontName={input_params.fontName}
-                fontSize={input_params.fontSize}
-                lineHeightMult={input_params.lineHeightMult}
-              />
-            ))
-          ) : (
-            <div>No formatted chunks to display. Press Format to generate verses.</div>
-          )}
+          {canvases.map((canvas, index) => (
+            <FormattedChunk
+              key={index}
+              canvas={canvas}
+            />
+          ))}
         </Stack>
       </Center>
     </>
