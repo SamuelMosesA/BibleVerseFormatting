@@ -1,187 +1,186 @@
-import { FormattedChunkType, FormattedLine, FormattedVerse, Verse } from "./types";
+// verse_chunking.ts
 
-function tryChunkVerse(
-  ctx: CanvasRenderingContext2D,
-  verse: Verse,
-  boxWidth: number,
-  boxHeight: number,
-  fontSize: number,
-  lineHeightMult: number,
-  fontName: string,
-  startX: number,
-  startY: number
-): FormattedVerse | null {
+import { FormattedChunkType, FormattedLine, Verse } from './types';
 
-  // We assume a line-height factor for spacing betwen lines
-  const lineHeight = fontSize * lineHeightMult;
-  // Create a bold prefix for the verse number.
-  // For measuring, set the context to the bold font.
-  ctx.font = `bold ${fontSize}px ${fontName}`;
-  // Measure the verse number and the trailing space.
-  let verseWithSpace = verse.verseNumber + ' ';
-  const boldWidth = ctx.measureText(verseWithSpace).width;
-
-  let lineWidth = startX;
-  let currentChunkHeight = startY;
-
-  let currentChunkLines: FormattedLine[] = []
-
-  let line: FormattedLine = []
-  // Now process the verse text by splitting it into words.
-  let verseText = verse.text.replaceAll("\n", " \n ").replaceAll("\t", " \t ")
-  const words = verseText.split(/ +/);
-  // For measurement purposes, we will accumulate the pixel width.
-  lineWidth += boldWidth;
-  line.push({ text: verse.verseNumber + " ", isBold: true })
-  // Switch to the normal font for subsequent words.
-  ctx.font = `${fontSize}px ${fontName}`;
-  console.log(ctx.font)
-
-  // Process each word (plus a trailing space).
-  for (const word of words) {
-    let trimmedWord = word.replace(/^( +)|( +)$/g, '');
-    if(trimmedWord == "\t"){
-      trimmedWord = " "
-    }
-    const wordWithSpace = trimmedWord + ' ';
-    const wordWidth = ctx.measureText(wordWithSpace).width;
-    if ((lineWidth + wordWidth > boxWidth) || trimmedWord == "\n") {
-      // The current word would overflow the line, so push the line.
-      // Before adding the line, check if there’s room in the current chunk.
-      if (currentChunkHeight + lineHeight > boxHeight && trimmedWord != "\n") {
-        // Not enough room—save the current chunk and start a new one.
-        return null;
-      }
-      currentChunkLines.push(line);
-      currentChunkHeight += lineHeight;
-      // Start a new line without the verse number (only for continuation lines).
-      if (trimmedWord == "\n") {
-        line = []
-        lineWidth = 0
-      } {
-        line = [{ text: wordWithSpace, isBold: false }]
-        lineWidth = ctx.measureText(wordWithSpace).width;
-      }
-    } else {
-      // Otherwise, append the word.
-      line.push({ text: trimmedWord, isBold: false });
-      lineWidth += wordWidth;
-    }
-  }
-
-  // Push the final line for the current verse.
-  if (currentChunkHeight > boxHeight) {
-    if (line.length > 0) {
-      return null
-    } else {
-      return {
-        format: currentChunkLines,
-        endX: lineWidth,
-        endY: currentChunkHeight - lineHeight
-      }
-    }
-  }
-  currentChunkLines.push(line)
-  return {
-    format: currentChunkLines,
-    endX: lineWidth,
-    endY: currentChunkHeight
-  }
-
-}
-
-
-function removeTrailingNewline(chunk: FormattedChunkType){
-  let lastLine = chunk[chunk.length-1]
-  if(lastLine[lastLine.length-1].text.search("\n") > 0){
-    console.log(lastLine[lastLine.length -1 ])
-  }
-}
-
-/**
- * Given a set of verses and canvas parameters, returns a list of HTML-formatted strings.
- * Each string is a “chunk” that will fit into a canvas of boxWidth x boxHeight.
- *
- * @param verses - an object with keys as verse numbers and values as verse text.
- * @param boxWidth - the width of the canvas (in pixels).
- * @param boxHeight - the height of the canvas (in pixels).
- * @param fontSize - the font size (in pixels).
- * @param fontName - the font family name (must match the one loaded from your google font url).
- * @returns An array of strings where each string is HTML with <b> for the verse number and <br> between lines.
- */
-export default function chunkVerses(
+export function processAndRenderVerses(
   verses: Verse[],
   boxWidth: number,
   boxHeight: number,
-  fontSize: number,
   fontName: string,
+  fontSize: number,
   lineHeightMult: number
-): FormattedChunkType[] {
-  // Create an offscreen canvas for measuring text widths.
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return [];
-
+): { canvases: HTMLCanvasElement[]; richTextData: FormattedChunkType[] } {
+  const canvases: HTMLCanvasElement[] = [];
+  const richTextData: FormattedChunkType[] = [];
   const lineHeight = fontSize * lineHeightMult;
-  let xPostiton = 0
-  let currentChunkHeight = lineHeight
 
-  const chunks: FormattedChunkType[] = [];
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  if (!measureCtx) {return { canvases: [], richTextData: [] };}
 
-  let currentChunk: FormattedLine[] = []
+  let currentChunkLines: FormattedLine[] = [];
+  let currentLine: FormattedLine = [];
+  let currentX = 0;
+  let currentY = fontSize;
 
-  let index = 0
-  while(index< verses.length){
-    let verse = verses.at(index)
-    if (verse == undefined) break;
-    let formattedVerseLine = tryChunkVerse(ctx, verse, boxWidth, boxHeight, fontSize, lineHeightMult, fontName, xPostiton, currentChunkHeight);
-    if (xPostiton == 0 && currentChunkHeight == lineHeight && formattedVerseLine == null){
-      throw {"verse too large": verse}
-    }
-    if (formattedVerseLine == null || formattedVerseLine.format.length == 0) {
-      chunks.push(currentChunk)
-      currentChunk = []
-      xPostiton = 0
-      currentChunkHeight = lineHeight
-    } else {
-      let linesToAdd = formattedVerseLine.format
-      if (currentChunk.length > 0){
-        currentChunk[currentChunk.length - 1] = currentChunk[currentChunk.length - 1].concat(linesToAdd[0])
-        linesToAdd = linesToAdd.slice(1)
+  const finishChunk = () => {
+    if (currentChunkLines.length === 0) {return;}
+
+    const canvas = document.createElement('canvas');
+    canvas.width = boxWidth;
+    canvas.height = boxHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {return;}
+
+    // **** CHANGED SECTION START ****
+    // 1. Set background color to white and fill the entire canvas.
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, boxWidth, boxHeight);
+
+    // 2. Set the text color to black for better contrast.
+    ctx.fillStyle = 'black';
+    // **** CHANGED SECTION END ****
+
+    let renderY = fontSize;
+    for (const line of currentChunkLines) {
+      let renderX = 0;
+
+      if (line.length > 0 && /^\s+$/.test(line[0].text)) {
+        ctx.font = `${fontSize}px ${fontName}`;
+        renderX = ctx.measureText(line[0].text).width;
       }
-      currentChunk = currentChunk.concat(linesToAdd)
-      xPostiton = formattedVerseLine.endX
-      currentChunkHeight = formattedVerseLine.endY
-      index += 1
+
+      for (const word of line) {
+        if (/^\s+$/.test(word.text)) {continue;}
+
+        ctx.font = `${word.isBold ? 'bold ' : ''}${fontSize}px ${fontName}`;
+        const textToRender = word.isBold ? word.text : `${word.text.trim()} `;
+        ctx.fillText(textToRender, renderX, renderY);
+        renderX += ctx.measureText(textToRender).width;
+      }
+      renderY += lineHeight;
+    }
+
+    canvases.push(canvas);
+    richTextData.push({
+      formattedText: currentChunkLines,
+      fontName,
+      fontSize,
+      lineHeightMult,
+      boxWidth,
+      boxHeight,
+    });
+    currentChunkLines = [];
+  };
+
+  const startNewLine = () => {
+    if (currentLine.length > 0) {currentChunkLines.push(currentLine);}
+    currentLine = [];
+    currentX = 0;
+    currentY += lineHeight;
+
+    if (currentY > boxHeight) {
+      finishChunk();
+      currentY = fontSize;
+    }
+  };
+
+  // The rest of the function (main loop) remains the same.
+  for (const verse of verses) {
+    measureCtx.font = `bold ${fontSize}px ${fontName}`;
+    const verseNumText = `${verse.verseNumber} `;
+    const verseNumWidth = measureCtx.measureText(verseNumText).width;
+
+    if (currentX > 0 && currentX + verseNumWidth > boxWidth) {startNewLine();}
+    currentLine.push({ text: verseNumText, isBold: true });
+    currentX += verseNumWidth;
+
+    const poeticLines = verse.text.split('\n');
+    measureCtx.font = `${fontSize}px ${fontName}`;
+
+    const firstLineWords = poeticLines[0].trim().split(/ +/);
+    for (const word of firstLineWords) {
+      if (!word) {continue;}
+      const wordWithSpace = `${word} `;
+      const wordWidth = measureCtx.measureText(wordWithSpace).width;
+      if (currentX + wordWidth > boxWidth) {startNewLine();}
+      currentLine.push({ text: word, isBold: false });
+      currentX += wordWidth;
+    }
+
+    for (let i = 1; i < poeticLines.length; i++) {
+      const poeticLine = poeticLines[i];
+      startNewLine();
+
+      const indentMatch = poeticLine.match(/^(\s*)/);
+      const indentText = indentMatch ? indentMatch[1] : '';
+      const trimmedLine = poeticLine.trim();
+
+      if (indentText) {
+        currentX = measureCtx.measureText(indentText).width;
+        if (currentLine.length === 0) {currentLine.push({ text: indentText, isBold: false });}
+      }
+
+      if (!trimmedLine) {continue;}
+
+      const words = trimmedLine.split(/ +/);
+      for (const word of words) {
+        if (!word) {continue;}
+        const wordWithSpace = `${word} `;
+        const wordWidth = measureCtx.measureText(wordWithSpace).width;
+        if (currentX + wordWidth > boxWidth) {
+          startNewLine();
+        }
+        currentLine.push({ text: word, isBold: false });
+        currentX += wordWidth;
+      }
     }
   }
 
-  chunks.push(currentChunk)
-  console.log(chunks)
-  return chunks;
+  if (currentLine.length > 0) {currentChunkLines.push(currentLine);}
+  if (currentChunkLines.length > 0) {finishChunk();}
+
+  return { canvases, richTextData };
 }
 
+/**
+ * Converts a FormattedLine into clean HTML. It handles bolding but now
+ * intentionally ignores indentation to allow for manual tabbing in Canva.
+ */
+function formatHtmlLine(line: FormattedLine): string {
+  const contentParts: string[] = [];
 
-function formatHtmlLine(line: FormattedLine):string{
-      return `${line
-              .map((word) =>
-                word.isBold ? `<b>${word.text.trim()}</b>` : word.text
-              )
-              .join(" ")}`
+  for (const word of line) {
+    // Skip any word that is purely whitespace (our old indent placeholders)
+    if (/^\s+$/.test(word.text) && !word.text.trim()) {
+      continue;
     }
 
-export const generateHTML = (
-  chunk: FormattedChunkType,
-  fontSize: string = "16px",
-  fontFamily: string = "Arial, sans-serif"
-): string => {
-  let str = `
-    <div style="font-size: ${fontSize}; font-family: ${fontFamily};">
-      ${chunk.slice(0,-1)
-        .map((line) =>{ return formatHtmlLine(line) + "<br>" })
-        .join("")}${formatHtmlLine(chunk[chunk.length-1])}</div>
-  `;
-  console.log(str)
-  return str
-};
+    const text = word.text.trim();
+    if (text) {
+      // Only process words that have actual content
+      if (word.isBold) {
+        contentParts.push(`<strong>${text}</strong>`);
+      } else {
+        contentParts.push(text);
+      }
+    }
+  }
 
+  return contentParts.join(' ');
+}
+
+/**
+ * Generates a single, simplified HTML string for all chunks, optimized for Canva.
+ */
+export const generateRichTextHTML = (chunks: FormattedChunkType[]): string => {
+  if (chunks.length === 0) {return '';}
+
+  return chunks
+    .map((chunk, index) => {
+      // Create a plain text header with line breaks for spacing
+      const header = `Slide ${index + 1}<br><br>`;
+      const slideContent = chunk.formattedText.map(formatHtmlLine).join('<br>');
+      return header + slideContent;
+    })
+    .join('<br><br><br>'); // Join separate chunks with extra spacing
+};
