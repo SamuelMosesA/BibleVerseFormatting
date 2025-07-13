@@ -44,7 +44,7 @@ export function useInputParams(): InputParamState {
   const [boxHeight, setBoxHeight] = useState<number>(220);
   const [boxWidth, setBoxWidth] = useState<number>(1100);
   const [fontName, setFontName] = useState<string>('Solway');
-  const [fontSize, setFontSize] = useState<number>(32);
+  const [fontSize, setFontSize] = useState<number>(24);
   const [lineHeightMult, setLineHeightMult] = useState<number>(1.4);
 
   return { biblePassage, setBiblePassage, boxHeight, setBoxHeight, boxWidth, setBoxWidth, fontName, setFontName, fontSize, setFontSize, lineHeightMult, setLineHeightMult };
