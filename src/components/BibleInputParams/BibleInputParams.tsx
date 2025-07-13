@@ -89,7 +89,7 @@ export const BibleInputParams: React.FC<InputParamState> = ({
                     placeholder="in px"
                     type="number"
                     value={fontSize}
-                    onChange={(e) => setFontSize(e.target.value)}
+                    onChange={(e) => setFontSize(Number(e.target.value))}
                   />
                 </div>
                 <div>
