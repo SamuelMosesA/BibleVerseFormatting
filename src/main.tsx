@@ -8,9 +8,12 @@ interface fontLink {
 }
 
 const fontLinks: fontLink[] = [
-  {rel: 'preconnect', href: 'https://fonts.googleapis.com',},
-  {rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous'},
-  {rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Solway:wght@300;400;500;700;800&display=swap'},
+  { rel: 'preload', href: 'https://fonts.googleapis.com' },
+  { rel: 'preload', href: 'https://fonts.gstatic.com', crossorigin: 'anonymous' },
+  {
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Solway:wght@300;400;500;700;800&display=swap',
+  },
 ];
 
 const addFontLinks = () => {
@@ -25,6 +28,6 @@ const addFontLinks = () => {
   }
 };
 
-addFontLinks()
+addFontLinks();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

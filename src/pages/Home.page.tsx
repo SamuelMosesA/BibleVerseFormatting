@@ -10,6 +10,34 @@ import { processAndRenderVerses, generateRichTextHTML } from '../data/verse_chun
 import { FormattedChunkType, InputParamState, Verse } from '@/data/types';
 import { get_bible_verses_from_api } from '@/data/esv_bible_api_data';
 
+function getStorageValue<T>(key: string, defaultValue: T): T {
+  // Getting stored value
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem(key);
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch (error) {
+        console.error('Error parsing JSON from localStorage', error);
+        return defaultValue;
+      }
+    }
+  }
+  return defaultValue;
+}
+
+export function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
+    return getStorageValue(key, defaultValue);
+  });
+
+  useEffect(() => {
+    // Storing value
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+
+  return [value, setValue];
+}
 
 export function useInputParams(): InputParamState {
   const [biblePassage, setBiblePassage] = useState<string>('John 3:16-18');
@@ -28,18 +56,21 @@ const getVersesFromPassage = async (biblePassage: string, password: string): Pro
 
 export function HomePage() {
   const inputParams = useInputParams();
-  const [apiVerses, setApiVerses] = useState<Verse[]>([]);
-  const [password, setPassword] = useState<string>('');
+  const [, setApiVerses] = useState<Verse[]>([]);
+  const [password, setPassword] = useLocalStorage<string>('passkey', '');
 
   // State to hold the final rendered canvases and the data for HTML export
   const [canvases, setCanvases] = useState<HTMLCanvasElement[]>([]);
   const [richTextData, setRichTextData] = useState<FormattedChunkType[]>([]);
 
   const handleFetchAndProcess = async () => {
-    if (!inputParams.biblePassage || !password) return;
+    if (!inputParams.biblePassage || !password) {return;}
     try {
       const verses = await getVersesFromPassage(inputParams.biblePassage, password);
       setApiVerses(verses);
+      
+      const fontString = `${inputParams.fontSize}px ${inputParams.fontName}`;
+      await document.fonts.load(fontString);
 
       // This one function now does all the work
       const { canvases: renderedCanvases, richTextData: data } = processAndRenderVerses(
@@ -61,7 +92,7 @@ export function HomePage() {
   };
 
   const handleCopyRichText = () => {
-    if (richTextData.length === 0) return;
+    if (richTextData.length === 0) {return;}
     const html = generateRichTextHTML(richTextData);
     const blob = new Blob([html], { type: 'text/html' });
     navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })])
