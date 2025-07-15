@@ -31,11 +31,6 @@ export function processAndRenderVerses(
     const ctx = canvas.getContext('2d');
     if (!ctx) {return;}
 
-    // **** CHANGED SECTION START ****
-    // 1. Set background color to white and fill the entire canvas.
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, boxWidth, boxHeight);
-
     // 2. Set the text color to black for better contrast.
     ctx.fillStyle = 'black';
     // **** CHANGED SECTION END ****
