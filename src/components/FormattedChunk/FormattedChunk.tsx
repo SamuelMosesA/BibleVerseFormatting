@@ -11,6 +11,8 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({ canvas }) => {
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
       // Clear previous canvas and append the new one
       while (container.firstChild) {
         container.removeChild(container.firstChild);
