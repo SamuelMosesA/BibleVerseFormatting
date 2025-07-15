@@ -116,8 +116,13 @@ export function HomePage() {
         </Center>
       )}
 
-      <Center mt="2dvh">
-        <Stack>
+      <Center mt="2dvh" mx="auto">
+        <Stack
+          style={{
+                      maxWidth: '100%',
+                      padding: '0 1rem', // Add some padding on mobile
+                    }}
+        >
           {canvases.map((canvas, index) => (
             <FormattedChunk
               key={index}
