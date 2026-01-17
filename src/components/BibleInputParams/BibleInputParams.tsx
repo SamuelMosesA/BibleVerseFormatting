@@ -1,5 +1,5 @@
-import { PropsWithChildren} from 'react';
-import { Container, Flex, Grid, SimpleGrid, Stack, TextInput } from '@mantine/core';
+import { PropsWithChildren } from 'react';
+import { Checkbox, Container, Flex, Grid, SimpleGrid, Stack, TextInput } from '@mantine/core';
 import { InputParamState } from '@/data/types';
 import classes from './BibleInputParams.module.css';
 
@@ -20,6 +20,8 @@ export const BibleInputParams: React.FC<InputParamState> = ({
   setFontSize,
   lineHeightMult,
   setLineHeightMult,
+  includeLogo,
+  setIncludeLogo,
 }) => {
   return (
     <Container my="md">
@@ -99,6 +101,14 @@ export const BibleInputParams: React.FC<InputParamState> = ({
                     type="number"
                     value={lineHeightMult}
                     onChange={(e) => setLineHeightMult(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <InputLabel>Logo</InputLabel>
+                  <Checkbox
+                    label="Include logo"
+                    checked={includeLogo}
+                    onChange={(e) => setIncludeLogo(e.currentTarget.checked)}
                   />
                 </div>
               </Stack>

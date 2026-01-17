@@ -1,5 +1,6 @@
 type SetStringState = React.Dispatch<React.SetStateAction<string>>;
 type SetNumberState = React.Dispatch<React.SetStateAction<number>>;
+type SetBooleanState = React.Dispatch<React.SetStateAction<boolean>>;
 
 export interface InputParamState {
   biblePassage: string;
@@ -19,6 +20,9 @@ export interface InputParamState {
 
   lineHeightMult: number;
   setLineHeightMult: SetNumberState;
+
+  includeLogo: boolean;
+  setIncludeLogo: SetBooleanState;
 }
 
 export interface FormattedVerse {

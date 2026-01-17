@@ -1,26 +1,25 @@
 import { createTheme, MantineColorsTuple, PasswordInput, TextInput } from '@mantine/core';
-import classes from './Global.module.css'
+import classes from './Global.module.css';
 
 const myColor: MantineColorsTuple = [
-  "#fffde1",
-  "#fff9cb",
-  "#fff29a",
-  "#ffea64",
-  "#ffe438",
-  "#ffe01d",
-  "#ffde09",
-  "#e3c500",
-  "#caaf00",
-  "#ae9600"
-]
-
+  '#fffde1',
+  '#fff9cb',
+  '#fff29a',
+  '#ffea64',
+  '#ffe438',
+  '#ffe01d',
+  '#ffde09',
+  '#e3c500',
+  '#caaf00',
+  '#ae9600',
+];
 
 export const theme = createTheme({
   primaryColor: 'yellow',
   fontFamily: 'Solway, Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif',
   defaultRadius: 'md',
   colors: {
-    'yellow': myColor,
+    yellow: myColor,
   },
   headings: {
     fontFamily: 'Solway, Gill Sans, Gill Sans MT, Calibri, Trebuchet MS, sans-serif',
@@ -31,18 +30,17 @@ export const theme = createTheme({
       defaultProps: {
         size: 'lg',
         classNames: {
-          input: classes.text_input 
-        }
-        }
+          input: classes.text_input,
+        },
+      },
     }),
     PasswordInput: PasswordInput.extend({
-      defaultProps:{
+      defaultProps: {
         size: 'lg',
         classNames: {
-          input: classes.text_input 
-        }
-      }
-    }
-    )
-  }
+          input: classes.text_input,
+        },
+      },
+    }),
+  },
 });

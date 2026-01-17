@@ -1,6 +1,6 @@
 import { Verse } from './types';
 
-const verse_parsing_regex = RegExp(/\[(?<verse_num>\d+)\](?<text>[^\[\]]+)/, 'g');
+const verse_parsing_regex = RegExp(/\[(?<verse_num>\d+)\](?<text>[^[\]]+)/, 'g');
 const double_newline = RegExp(/\n\s*\n/, 'g');
 
 function parse_api_result(passage_str: string): Verse[] {
@@ -54,11 +54,7 @@ async function decodeApiKey(encodedString: string, password: string) {
       ['decrypt']
     );
 
-    const decryptedBuffer = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      ciphertext
-    );
+    const decryptedBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
 
     const decoder = new TextDecoder();
     const apiKey = decoder.decode(decryptedBuffer);
@@ -124,7 +120,7 @@ export async function get_bible_verses_from_api(query: string, password: string)
   const apiKey = await decodeApiKey(encodedApiKey, password);
 
   const myHeaders = new Headers();
-  myHeaders.append('Authorization', `Token ${  apiKey}`);
+  myHeaders.append('Authorization', `Token ${apiKey}`);
 
   // 1. Create search parameters
   const params = new URLSearchParams();
@@ -150,18 +146,13 @@ export async function get_bible_verses_from_api(query: string, password: string)
 
   const response = await fetch(apiRequest);
   if (!response.ok) {
-    throw {
-      error_code: response.status,
-      msg: await response.text(),
-    };
+    const errorMsg = await response.text();
+    throw new Error(`API request failed with status ${response.status}: ${errorMsg}`);
   }
 
   const content = await response.json();
   if (!content.passages || content.passages.length < 1) {
-    throw {
-      error_code: 500,
-      msg: 'could not find data in passages response',
-    };
+    throw new Error('Could not find data in passages response');
   }
   return parse_api_result(content.passages.at(0));
 }
