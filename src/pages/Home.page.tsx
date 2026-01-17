@@ -1,6 +1,7 @@
 // home.tsx
 
 import React, { useEffect, useState } from 'react';
+import JSZip from 'jszip';
 import { Button, Center, Group, Stack } from '@mantine/core';
 import logoUrl from '@/assets/logo.png';
 import { get_bible_verses_from_api } from '@/data/esv_bible_api_data';
@@ -197,131 +198,22 @@ export function HomePage() {
     });
   };
 
-  const getDosDateTime = (date: Date) => {
-    const year = Math.max(1980, date.getFullYear());
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const seconds = Math.floor(date.getSeconds() / 2);
-    const dosTime = (hours << 11) | (minutes << 5) | seconds;
-    const dosDate = ((year - 1980) << 9) | (month << 5) | day;
-    return { dosTime, dosDate };
-  };
-
-  const crcTable = (() => {
-    const table = new Uint32Array(256);
-    for (let i = 0; i < 256; i++) {
-      let c = i;
-      for (let k = 0; k < 8; k++) {
-        c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-      }
-      table[i] = c >>> 0;
-    }
-    return table;
-  })();
-
-  const crc32 = (data: Uint8Array) => {
-    let crc = 0xffffffff;
-    for (let i = 0; i < data.length; i++) {
-      crc = crcTable[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
-    }
-    return (crc ^ 0xffffffff) >>> 0;
-  };
-
-  const createZip = (files: { name: string; data: Uint8Array }[]) => {
-    const encoder = new TextEncoder();
-    const chunks: Uint8Array[] = [];
-    const centralDirChunks: Uint8Array[] = [];
-    let offset = 0;
-    const now = new Date();
-    const { dosTime, dosDate } = getDosDateTime(now);
-
-    const pushUint16 = (view: DataView, pos: number, value: number) => {
-      view.setUint16(pos, value, true);
-    };
-    const pushUint32 = (view: DataView, pos: number, value: number) => {
-      view.setUint32(pos, value, true);
-    };
-
-    for (const file of files) {
-      const nameBytes = encoder.encode(file.name);
-      const crc = crc32(file.data);
-      const localHeader = new Uint8Array(30 + nameBytes.length);
-      const localView = new DataView(localHeader.buffer);
-      pushUint32(localView, 0, 0x04034b50);
-      pushUint16(localView, 4, 20);
-      pushUint16(localView, 6, 0);
-      pushUint16(localView, 8, 0);
-      pushUint16(localView, 10, dosTime);
-      pushUint16(localView, 12, dosDate);
-      pushUint32(localView, 14, crc);
-      pushUint32(localView, 18, file.data.length);
-      pushUint32(localView, 22, file.data.length);
-      pushUint16(localView, 26, nameBytes.length);
-      pushUint16(localView, 28, 0);
-      localHeader.set(nameBytes, 30);
-
-      chunks.push(localHeader, file.data);
-
-      const centralHeader = new Uint8Array(46 + nameBytes.length);
-      const centralView = new DataView(centralHeader.buffer);
-      pushUint32(centralView, 0, 0x02014b50);
-      pushUint16(centralView, 4, 20);
-      pushUint16(centralView, 6, 20);
-      pushUint16(centralView, 8, 0);
-      pushUint16(centralView, 10, 0);
-      pushUint16(centralView, 12, dosTime);
-      pushUint16(centralView, 14, dosDate);
-      pushUint32(centralView, 16, crc);
-      pushUint32(centralView, 20, file.data.length);
-      pushUint32(centralView, 24, file.data.length);
-      pushUint16(centralView, 28, nameBytes.length);
-      pushUint16(centralView, 30, 0);
-      pushUint16(centralView, 32, 0);
-      pushUint16(centralView, 34, 0);
-      pushUint16(centralView, 36, 0);
-      pushUint32(centralView, 38, 0);
-      pushUint32(centralView, 42, offset);
-      centralHeader.set(nameBytes, 46);
-
-      centralDirChunks.push(centralHeader);
-      offset += localHeader.length + file.data.length;
-    }
-
-    const centralDirSize = centralDirChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const centralDirOffset = offset;
-    chunks.push(...centralDirChunks);
-
-    const endRecord = new Uint8Array(22);
-    const endView = new DataView(endRecord.buffer);
-    pushUint32(endView, 0, 0x06054b50);
-    pushUint16(endView, 4, 0);
-    pushUint16(endView, 6, 0);
-    pushUint16(endView, 8, files.length);
-    pushUint16(endView, 10, files.length);
-    pushUint32(endView, 12, centralDirSize);
-    pushUint32(endView, 16, centralDirOffset);
-    pushUint16(endView, 20, 0);
-    chunks.push(endRecord);
-
-    return new Blob(chunks as BlobPart[], { type: 'application/zip' });
-  };
-
   const handleDownloadAll = async () => {
     if (slides.length === 0) {
       return;
     }
     try {
-      const files = await Promise.all(
+      const zip = new JSZip();
+
+      await Promise.all(
         slides.map(async (slide, index) => {
           const name = `${baseFileName || 'bible-passage'}-${index + 1}.png`;
           const blob = await getCanvasBlob(slide.canvas);
-          const arrayBuffer = await blob.arrayBuffer();
-          return { name, data: new Uint8Array(arrayBuffer) };
+          zip.file(name, blob);
         })
       );
-      const zipBlob = createZip(files);
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(zipBlob);
       const link = document.createElement('a');
       link.href = url;
