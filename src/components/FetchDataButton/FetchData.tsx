@@ -1,7 +1,6 @@
-
 import React from 'react';
-import { Center, Button } from '@mantine/core';
-import classes from './FetchData.module.css'
+import { Button, Center } from '@mantine/core';
+import classes from './FetchData.module.css';
 
 export interface FetchDataButtonProps {
   onClick: React.MouseEventHandler<HTMLButtonElement>;

@@ -115,7 +115,9 @@ function appendVerseLines(
   const poeticLines = cleanedText.split('\n');
   const firstLineWords = poeticLines[0].trim().split(/ +/);
   for (const word of firstLineWords) {
-    if (!word) {continue;}
+    if (!word) {
+      continue;
+    }
     addWord({ text: word, isBold: false });
   }
 
@@ -125,18 +127,21 @@ function appendVerseLines(
     const indentText = indentMatch ? indentMatch[1] : '';
     const trimmedLine = poeticLine.trim();
 
-    if (!indentText && !trimmedLine) {continue;}
+    // Skip lines that have no actual text content (just whitespace)
+    if (!trimmedLine) {
+      continue;
+    }
     pushLine();
 
     if (indentText) {
       addWord({ text: indentText, isBold: false });
     }
 
-    if (!trimmedLine) {continue;}
-
     const words = trimmedLine.split(/ +/);
     for (const word of words) {
-      if (!word) {continue;}
+      if (!word) {
+        continue;
+      }
       addWord({ text: word, isBold: false });
     }
   }
@@ -158,13 +163,17 @@ export function processAndRenderVerses(
   const lineHeight = fontSize * lineHeightMult;
 
   const measureCtx = document.createElement('canvas').getContext('2d');
-  if (!measureCtx) {return { canvases: [], richTextData: [] };}
+  if (!measureCtx) {
+    return { canvases: [], richTextData: [] };
+  }
 
   const maxLinesPerChunk = Math.floor((boxHeight - fontSize) / lineHeight) + 1;
-  if (maxLinesPerChunk < 1) {return { canvases: [], richTextData: [] };}
+  if (maxLinesPerChunk < 1) {
+    return { canvases: [], richTextData: [] };
+  }
 
   const logoLayout = getLogoLayout(
-    options?.includeLogo ? options.logoImage ?? null : null,
+    options?.includeLogo ? (options.logoImage ?? null) : null,
     boxWidth,
     boxHeight
   );
@@ -182,13 +191,17 @@ export function processAndRenderVerses(
   };
 
   const finishChunk = () => {
-    if (currentChunkLines.length === 0) {return;}
+    if (currentChunkLines.length === 0) {
+      return;
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = boxWidth;
     canvas.height = boxHeight;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {return;}
+    if (!ctx) {
+      return;
+    }
 
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, boxWidth, boxHeight);
@@ -244,7 +257,8 @@ export function processAndRenderVerses(
       currentLine,
       currentX
     );
-    const linesAfter = currentChunkLines.length + layout.lines.length + (layout.endLine.length > 0 ? 1 : 0);
+    const linesAfter =
+      currentChunkLines.length + layout.lines.length + (layout.endLine.length > 0 ? 1 : 0);
 
     if (linesAfter <= maxLinesPerChunk) {
       currentChunkLines = currentChunkLines.concat(layout.lines);
@@ -279,8 +293,12 @@ export function processAndRenderVerses(
     const verseLines = freshLayout.lines.concat(
       freshLayout.endLine.length > 0 ? [freshLayout.endLine] : []
     );
-    for (let i = 0; i < verseLines.length; i += maxLinesPerChunk) {
-      currentChunkLines = verseLines.slice(i, i + maxLinesPerChunk);
+    const totalLines = verseLines.length;
+    const numChunks = Math.ceil(totalLines / maxLinesPerChunk);
+    const balancedSize = Math.ceil(totalLines / numChunks);
+
+    for (let i = 0; i < totalLines; i += balancedSize) {
+      currentChunkLines = verseLines.slice(i, i + balancedSize);
       finishChunk();
     }
     currentChunkLines = [];
@@ -289,7 +307,9 @@ export function processAndRenderVerses(
   }
 
   flushCurrentLine();
-  if (currentChunkLines.length > 0) {finishChunk();}
+  if (currentChunkLines.length > 0) {
+    finishChunk();
+  }
 
   return { canvases, richTextData };
 }
@@ -302,18 +322,22 @@ export function renderHeadingCanvas(
   fontSize: number,
   options?: RenderOptions
 ): HTMLCanvasElement | null {
-  if (!headingText.trim()) {return null;}
+  if (!headingText.trim()) {
+    return null;
+  }
 
   const canvas = document.createElement('canvas');
   canvas.width = boxWidth;
   canvas.height = boxHeight;
   const ctx = canvas.getContext('2d');
-  if (!ctx) {return null;}
+  if (!ctx) {
+    return null;
+  }
 
   const headingFontSize = Math.round(fontSize * 1.6);
   const lineHeight = headingFontSize * 1.2;
   const logoLayout = getLogoLayout(
-    options?.includeLogo ? options.logoImage ?? null : null,
+    options?.includeLogo ? (options.logoImage ?? null) : null,
     boxWidth,
     boxHeight
   );
@@ -338,7 +362,9 @@ export function renderHeadingCanvas(
       currentLine = testLine;
     }
   }
-  if (currentLine) {lines.push(currentLine);}
+  if (currentLine) {
+    lines.push(currentLine);
+  }
 
   const minTopPadding = 16;
   const totalHeight = lines.length * lineHeight;
@@ -391,7 +417,9 @@ function formatHtmlLine(line: FormattedLine): string {
  * Generates a single, simplified HTML string for all chunks, optimized for Canva.
  */
 export const generateRichTextHTML = (chunks: FormattedChunkType[]): string => {
-  if (chunks.length === 0) {return '';}
+  if (chunks.length === 0) {
+    return '';
+  }
 
   return chunks
     .map((chunk, index) => {

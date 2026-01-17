@@ -1,4 +1,4 @@
-import { PropsWithChildren} from 'react';
+import { PropsWithChildren } from 'react';
 import { Checkbox, Container, Flex, Grid, SimpleGrid, Stack, TextInput } from '@mantine/core';
 import { InputParamState } from '@/data/types';
 import classes from './BibleInputParams.module.css';
