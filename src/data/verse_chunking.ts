@@ -2,13 +2,156 @@
 
 import { FormattedChunkType, FormattedLine, Verse } from './types';
 
+interface RenderOptions {
+  includeLogo?: boolean;
+  logoImage?: HTMLImageElement | null;
+}
+
+interface LogoLayout {
+  textStartX: number;
+  textWidth: number;
+  drawRect: { x: number; y: number; width: number; height: number } | null;
+}
+
+function getLogoLayout(
+  logoImage: HTMLImageElement | null,
+  boxWidth: number,
+  boxHeight: number
+): LogoLayout {
+  if (!logoImage) {
+    return { textStartX: 0, textWidth: boxWidth, drawRect: null };
+  }
+
+  const logoMarginX = Math.max(24, Math.round(boxWidth * 0.02));
+  const logoGap = Math.max(16, Math.round(boxWidth * 0.015));
+  const logoMaxWidth = Math.round(boxWidth * 0.18);
+  const logoMaxHeight = Math.round(boxHeight * 0.88);
+
+  const widthScale = logoMaxWidth / logoImage.width;
+  const heightScale = logoMaxHeight / logoImage.height;
+  const scale = Math.min(widthScale, heightScale, 1);
+  const drawWidth = Math.round(logoImage.width * scale);
+  const drawHeight = Math.round(logoImage.height * scale);
+  const drawX = logoMarginX;
+  const drawY = Math.round((boxHeight - drawHeight) / 2);
+
+  return {
+    textStartX: drawX + drawWidth + logoGap,
+    textWidth: Math.max(0, boxWidth - (drawX + drawWidth + logoGap)),
+    drawRect: { x: drawX, y: drawY, width: drawWidth, height: drawHeight },
+  };
+}
+
+function getRenderedLineWidth(
+  ctx: CanvasRenderingContext2D,
+  line: FormattedLine,
+  fontName: string,
+  fontSize: number
+): number {
+  let width = 0;
+  for (const word of line) {
+    if (/^\s+$/.test(word.text)) {
+      ctx.font = `${fontSize}px ${fontName}`;
+      width += ctx.measureText(word.text).width;
+      continue;
+    }
+    ctx.font = `${word.isBold ? 'bold ' : ''}${fontSize}px ${fontName}`;
+    const textToRender = word.isBold ? word.text : `${word.text.trim()} `;
+    width += ctx.measureText(textToRender).width;
+  }
+  return width;
+}
+
+function appendVerseLines(
+  verse: Verse,
+  measureCtx: CanvasRenderingContext2D,
+  textWidth: number,
+  fontName: string,
+  fontSize: number,
+  startLine: FormattedLine,
+  startX: number
+): { lines: FormattedLine[]; endLine: FormattedLine; endX: number } {
+  const lines: FormattedLine[] = [];
+  let currentLine: FormattedLine = startLine.slice();
+  let currentX = startX;
+
+  const pushLine = () => {
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+    currentLine = [];
+    currentX = 0;
+  };
+
+  const addWord = (word: { text: string; isBold: boolean }) => {
+    if (/^\s+$/.test(word.text)) {
+      measureCtx.font = `${fontSize}px ${fontName}`;
+      const width = measureCtx.measureText(word.text).width;
+      if (currentX + width > textWidth && currentLine.length > 0) {
+        pushLine();
+      }
+      currentLine.push(word);
+      currentX += width;
+      return;
+    }
+
+    measureCtx.font = `${word.isBold ? 'bold ' : ''}${fontSize}px ${fontName}`;
+    const textToRender = word.isBold ? word.text : `${word.text.trim()} `;
+    const width = measureCtx.measureText(textToRender).width;
+    if (currentX + width > textWidth && currentLine.length > 0) {
+      pushLine();
+    }
+    currentLine.push(word);
+    currentX += width;
+  };
+
+  addWord({ text: `${verse.verseNumber} `, isBold: true });
+
+  const cleanedText = verse.text.replace(/\n+$/g, '');
+  if (!cleanedText.trim()) {
+    return { lines, endLine: currentLine, endX: currentX };
+  }
+
+  const poeticLines = cleanedText.split('\n');
+  const firstLineWords = poeticLines[0].trim().split(/ +/);
+  for (const word of firstLineWords) {
+    if (!word) {continue;}
+    addWord({ text: word, isBold: false });
+  }
+
+  for (let i = 1; i < poeticLines.length; i++) {
+    const poeticLine = poeticLines[i];
+    const indentMatch = poeticLine.match(/^(\s*)/);
+    const indentText = indentMatch ? indentMatch[1] : '';
+    const trimmedLine = poeticLine.trim();
+
+    if (!indentText && !trimmedLine) {continue;}
+    pushLine();
+
+    if (indentText) {
+      addWord({ text: indentText, isBold: false });
+    }
+
+    if (!trimmedLine) {continue;}
+
+    const words = trimmedLine.split(/ +/);
+    for (const word of words) {
+      if (!word) {continue;}
+      addWord({ text: word, isBold: false });
+    }
+  }
+
+  return { lines, endLine: currentLine, endX: currentX };
+}
+
 export function processAndRenderVerses(
   verses: Verse[],
   boxWidth: number,
   boxHeight: number,
   fontName: string,
   fontSize: number,
-  lineHeightMult: number
+  lineHeightMult: number,
+  options?: RenderOptions
 ): { canvases: HTMLCanvasElement[]; richTextData: FormattedChunkType[] } {
   const canvases: HTMLCanvasElement[] = [];
   const richTextData: FormattedChunkType[] = [];
@@ -17,10 +160,26 @@ export function processAndRenderVerses(
   const measureCtx = document.createElement('canvas').getContext('2d');
   if (!measureCtx) {return { canvases: [], richTextData: [] };}
 
+  const maxLinesPerChunk = Math.floor((boxHeight - fontSize) / lineHeight) + 1;
+  if (maxLinesPerChunk < 1) {return { canvases: [], richTextData: [] };}
+
+  const logoLayout = getLogoLayout(
+    options?.includeLogo ? options.logoImage ?? null : null,
+    boxWidth,
+    boxHeight
+  );
+
   let currentChunkLines: FormattedLine[] = [];
   let currentLine: FormattedLine = [];
   let currentX = 0;
-  let currentY = fontSize;
+
+  const flushCurrentLine = () => {
+    if (currentLine.length > 0) {
+      currentChunkLines.push(currentLine);
+      currentLine = [];
+      currentX = 0;
+    }
+  };
 
   const finishChunk = () => {
     if (currentChunkLines.length === 0) {return;}
@@ -31,21 +190,29 @@ export function processAndRenderVerses(
     const ctx = canvas.getContext('2d');
     if (!ctx) {return;}
 
-    // 2. Set the text color to black for better contrast.
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, boxWidth, boxHeight);
     ctx.fillStyle = 'black';
-    // **** CHANGED SECTION END ****
 
-    let renderY = fontSize;
+    if (logoLayout.drawRect && options?.includeLogo && options.logoImage) {
+      const { x, y, width, height } = logoLayout.drawRect;
+      ctx.drawImage(options.logoImage, x, y, width, height);
+    }
+
+    const minTopPadding = 16;
+    const textBlockHeight = currentChunkLines.length * lineHeight;
+    const topPadding = Math.max(minTopPadding, Math.round((boxHeight - textBlockHeight) / 2));
+    let renderY = topPadding + fontSize;
     for (const line of currentChunkLines) {
-      let renderX = 0;
-
-      if (line.length > 0 && /^\s+$/.test(line[0].text)) {
-        ctx.font = `${fontSize}px ${fontName}`;
-        renderX = ctx.measureText(line[0].text).width;
-      }
+      const lineWidth = getRenderedLineWidth(ctx, line, fontName, fontSize);
+      let renderX = logoLayout.textStartX + Math.max(0, (logoLayout.textWidth - lineWidth) / 2);
 
       for (const word of line) {
-        if (/^\s+$/.test(word.text)) {continue;}
+        if (/^\s+$/.test(word.text)) {
+          ctx.font = `${fontSize}px ${fontName}`;
+          renderX += ctx.measureText(word.text).width;
+          continue;
+        }
 
         ctx.font = `${word.isBold ? 'bold ' : ''}${fontSize}px ${fontName}`;
         const textToRender = word.isBold ? word.text : `${word.text.trim()} `;
@@ -67,74 +234,130 @@ export function processAndRenderVerses(
     currentChunkLines = [];
   };
 
-  const startNewLine = () => {
-    if (currentLine.length > 0) {currentChunkLines.push(currentLine);}
+  for (const verse of verses) {
+    const layout = appendVerseLines(
+      verse,
+      measureCtx,
+      logoLayout.textWidth,
+      fontName,
+      fontSize,
+      currentLine,
+      currentX
+    );
+    const linesAfter = currentChunkLines.length + layout.lines.length + (layout.endLine.length > 0 ? 1 : 0);
+
+    if (linesAfter <= maxLinesPerChunk) {
+      currentChunkLines = currentChunkLines.concat(layout.lines);
+      currentLine = layout.endLine;
+      currentX = layout.endX;
+      continue;
+    }
+
+    const freshLayout = appendVerseLines(
+      verse,
+      measureCtx,
+      logoLayout.textWidth,
+      fontName,
+      fontSize,
+      [],
+      0
+    );
+    const freshLinesTotal = freshLayout.lines.length + (freshLayout.endLine.length > 0 ? 1 : 0);
+
+    if (freshLinesTotal <= maxLinesPerChunk) {
+      flushCurrentLine();
+      finishChunk();
+      currentChunkLines = freshLayout.lines.slice();
+      currentLine = freshLayout.endLine;
+      currentX = freshLayout.endX;
+      continue;
+    }
+
+    flushCurrentLine();
+    finishChunk();
+
+    const verseLines = freshLayout.lines.concat(
+      freshLayout.endLine.length > 0 ? [freshLayout.endLine] : []
+    );
+    for (let i = 0; i < verseLines.length; i += maxLinesPerChunk) {
+      currentChunkLines = verseLines.slice(i, i + maxLinesPerChunk);
+      finishChunk();
+    }
+    currentChunkLines = [];
     currentLine = [];
     currentX = 0;
-    currentY += lineHeight;
-
-    if (currentY > boxHeight) {
-      finishChunk();
-      currentY = fontSize;
-    }
-  };
-
-  // The rest of the function (main loop) remains the same.
-  for (const verse of verses) {
-    measureCtx.font = `bold ${fontSize}px ${fontName}`;
-    const verseNumText = `${verse.verseNumber} `;
-    const verseNumWidth = measureCtx.measureText(verseNumText).width;
-
-    if (currentX > 0 && currentX + verseNumWidth > boxWidth) {startNewLine();}
-    currentLine.push({ text: verseNumText, isBold: true });
-    currentX += verseNumWidth;
-
-    const poeticLines = verse.text.split('\n');
-    measureCtx.font = `${fontSize}px ${fontName}`;
-
-    const firstLineWords = poeticLines[0].trim().split(/ +/);
-    for (const word of firstLineWords) {
-      if (!word) {continue;}
-      const wordWithSpace = `${word} `;
-      const wordWidth = measureCtx.measureText(wordWithSpace).width;
-      if (currentX + wordWidth > boxWidth) {startNewLine();}
-      currentLine.push({ text: word, isBold: false });
-      currentX += wordWidth;
-    }
-
-    for (let i = 1; i < poeticLines.length; i++) {
-      const poeticLine = poeticLines[i];
-      startNewLine();
-
-      const indentMatch = poeticLine.match(/^(\s*)/);
-      const indentText = indentMatch ? indentMatch[1] : '';
-      const trimmedLine = poeticLine.trim();
-
-      if (indentText) {
-        currentX = measureCtx.measureText(indentText).width;
-        if (currentLine.length === 0) {currentLine.push({ text: indentText, isBold: false });}
-      }
-
-      if (!trimmedLine) {continue;}
-
-      const words = trimmedLine.split(/ +/);
-      for (const word of words) {
-        if (!word) {continue;}
-        const wordWithSpace = `${word} `;
-        const wordWidth = measureCtx.measureText(wordWithSpace).width;
-        if (currentX + wordWidth > boxWidth) {
-          startNewLine();
-        }
-        currentLine.push({ text: word, isBold: false });
-        currentX += wordWidth;
-      }
-    }
   }
 
-  if (currentLine.length > 0) {currentChunkLines.push(currentLine);}
+  flushCurrentLine();
   if (currentChunkLines.length > 0) {finishChunk();}
 
   return { canvases, richTextData };
+}
+
+export function renderHeadingCanvas(
+  headingText: string,
+  boxWidth: number,
+  boxHeight: number,
+  fontName: string,
+  fontSize: number,
+  options?: RenderOptions
+): HTMLCanvasElement | null {
+  if (!headingText.trim()) {return null;}
+
+  const canvas = document.createElement('canvas');
+  canvas.width = boxWidth;
+  canvas.height = boxHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {return null;}
+
+  const headingFontSize = Math.round(fontSize * 1.6);
+  const lineHeight = headingFontSize * 1.2;
+  const logoLayout = getLogoLayout(
+    options?.includeLogo ? options.logoImage ?? null : null,
+    boxWidth,
+    boxHeight
+  );
+  const maxTextWidth = Math.round(logoLayout.textWidth * 0.9);
+
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, boxWidth, boxHeight);
+  ctx.fillStyle = 'black';
+  ctx.font = `bold ${headingFontSize}px ${fontName}`;
+
+  const words = headingText.trim().split(/ +/);
+  const lines: string[] = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const testWidth = ctx.measureText(testLine).width;
+    if (testWidth > maxTextWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) {lines.push(currentLine);}
+
+  const minTopPadding = 16;
+  const totalHeight = lines.length * lineHeight;
+  const topPadding = Math.max(minTopPadding, Math.round((boxHeight - totalHeight) / 2));
+  let y = topPadding + headingFontSize;
+
+  if (logoLayout.drawRect && options?.includeLogo && options.logoImage) {
+    const { x, y: logoY, width, height } = logoLayout.drawRect;
+    ctx.drawImage(options.logoImage, x, logoY, width, height);
+  }
+
+  for (const line of lines) {
+    const lineWidth = ctx.measureText(line).width;
+    const x = Math.round(logoLayout.textStartX + (logoLayout.textWidth - lineWidth) / 2);
+    ctx.fillText(line, x, y);
+    y += lineHeight;
+  }
+
+  return canvas;
 }
 
 /**

@@ -3,10 +3,17 @@ import { Card, Center, Button, Group } from '@mantine/core';
 
 export interface FormattedChunkProps {
   canvas: HTMLCanvasElement;
+  downloadName?: string;
 }
 
-export const FormattedChunk: React.FC<FormattedChunkProps> = ({ canvas }) => {
+export const FormattedChunk: React.FC<FormattedChunkProps> = ({ canvas, downloadName }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const supportsImageClipboard =
+    !isSafari &&
+    typeof ClipboardItem !== 'undefined' &&
+    !!navigator.clipboard?.write &&
+    !!window.isSecureContext;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -22,6 +29,7 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({ canvas }) => {
   }, [canvas]);
 
   const copyImage = () => {
+    if (!supportsImageClipboard) {return;}
     canvas.toBlob((blob) => {
       if (!blob) {
         console.error("Failed to create blob from canvas");
@@ -29,6 +37,23 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({ canvas }) => {
       }
       navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
         .catch(err => console.error("Failed to copy image:", err));
+    });
+  };
+
+  const downloadImage = () => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        console.error("Failed to create blob from canvas");
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = downloadName || 'bible-verse.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     });
   };
 
@@ -43,7 +68,12 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({ canvas }) => {
       <div ref={containerRef} />
       <Center mt="md">
         <Group>
-          <Button onClick={copyImage}>Copy Image</Button>
+          {supportsImageClipboard && (
+            <Button onClick={copyImage}>
+              Copy Image
+            </Button>
+          )}
+          <Button variant="light" onClick={downloadImage}>Download Image</Button>
         </Group>
       </Center>
     </Card>
