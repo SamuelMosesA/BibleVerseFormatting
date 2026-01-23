@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import JSZip from 'jszip';
 import { Button, Center, Group, Stack } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import logoUrl from '@/assets/logo.png';
 import { get_bible_verses_from_api } from '@/data/esv_bible_api_data';
 import { FormattedChunkType, InputParamState, Verse } from '@/data/types';
@@ -101,9 +102,23 @@ export function HomePage() {
   };
 
   const handleFetchAndProcess = async () => {
-    if (!inputParams.biblePassage || !password) {
+    if (!inputParams.biblePassage) {
+      notifications.show({
+        title: 'Input Required',
+        message: 'Please enter a bible passage',
+        color: 'red',
+      });
       return;
     }
+    if (!password) {
+      notifications.show({
+        title: 'Unlock Key Required',
+        message: 'Please enter the Password',
+        color: 'red',
+      });
+      return;
+    }
+
     try {
       const passages = inputParams.biblePassage
         .split(',')
@@ -164,6 +179,11 @@ export function HomePage() {
     } catch (error) {
       console.error('Error fetching or processing verses:', error);
       setSlides([]);
+      notifications.show({
+        title: 'Fetch Failed',
+        message: 'Failed to fetch verses. Check your Password or passage format.',
+        color: 'red',
+      });
     }
   };
 
