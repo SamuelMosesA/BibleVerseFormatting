@@ -22,6 +22,8 @@ export const BibleInputParams: React.FC<InputParamState> = ({
   setLineHeightMult,
   includeLogo,
   setIncludeLogo,
+  totalHeight,
+  setTotalHeight,
 }) => {
   return (
     <Container my="md">
@@ -64,6 +66,15 @@ export const BibleInputParams: React.FC<InputParamState> = ({
                     type="number"
                     value={boxWidth}
                     onChange={(e) => setBoxWidth(Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <InputLabel>Total Image Height</InputLabel>
+                  <TextInput
+                    placeholder="in px (e.g. 1080)"
+                    type="number"
+                    value={totalHeight}
+                    onChange={(e) => setTotalHeight(Number(e.target.value))}
                   />
                 </div>
               </Stack>
