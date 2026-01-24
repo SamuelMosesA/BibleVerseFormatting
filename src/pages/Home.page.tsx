@@ -57,6 +57,7 @@ export function useInputParams(): InputParamState {
   const [fontSize, setFontSize] = useState<number>(40);
   const [lineHeightMult, setLineHeightMult] = useState<number>(1.4);
   const [includeLogo, setIncludeLogo] = useState<boolean>(false);
+  const [totalHeight, setTotalHeight] = useState<number>(1080);
 
   return {
     biblePassage,
@@ -73,6 +74,8 @@ export function useInputParams(): InputParamState {
     setLineHeightMult,
     includeLogo,
     setIncludeLogo,
+    totalHeight,
+    setTotalHeight,
   };
 }
 
@@ -156,7 +159,7 @@ export function HomePage() {
           inputParams.fontName,
           inputParams.fontSize,
           inputParams.lineHeightMult,
-          { includeLogo: inputParams.includeLogo, logoImage }
+          { includeLogo: inputParams.includeLogo, logoImage, totalHeight: inputParams.totalHeight }
         );
         const headingCanvas = renderHeadingCanvas(
           passage,
@@ -164,7 +167,7 @@ export function HomePage() {
           inputParams.boxHeight,
           inputParams.fontName,
           inputParams.fontSize,
-          { includeLogo: inputParams.includeLogo, logoImage }
+          { includeLogo: inputParams.includeLogo, logoImage, totalHeight: inputParams.totalHeight }
         );
         if (headingCanvas) {
           allSlides.push({ canvas: headingCanvas });

@@ -23,6 +23,9 @@ export interface InputParamState {
 
   includeLogo: boolean;
   setIncludeLogo: SetBooleanState;
+
+  totalHeight: number;
+  setTotalHeight: SetNumberState;
 }
 
 export interface FormattedVerse {
@@ -43,6 +46,7 @@ export interface FormattedChunkType {
   lineHeightMult: number;
   boxWidth: number;
   boxHeight: number;
+  totalHeight: number;
 }
 
 export interface Verse {

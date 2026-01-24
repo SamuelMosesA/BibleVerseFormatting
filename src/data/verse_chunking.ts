@@ -5,6 +5,7 @@ import { FormattedChunkType, FormattedLine, Verse } from './types';
 interface RenderOptions {
   includeLogo?: boolean;
   logoImage?: HTMLImageElement | null;
+  totalHeight?: number;
 }
 
 interface LogoLayout {
@@ -197,12 +198,17 @@ export function processAndRenderVerses(
 
     const canvas = document.createElement('canvas');
     canvas.width = boxWidth;
-    canvas.height = boxHeight;
+    canvas.height = options?.totalHeight ?? boxHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       return;
     }
 
+    // Fill entire canvas with black (for projection)
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Fill the white box at the top
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, boxWidth, boxHeight);
     ctx.fillStyle = 'black';
@@ -243,6 +249,7 @@ export function processAndRenderVerses(
       lineHeightMult,
       boxWidth,
       boxHeight,
+      totalHeight: options?.totalHeight ?? boxHeight,
     });
     currentChunkLines = [];
   };
@@ -328,11 +335,20 @@ export function renderHeadingCanvas(
 
   const canvas = document.createElement('canvas');
   canvas.width = boxWidth;
-  canvas.height = boxHeight;
+  canvas.height = options?.totalHeight ?? boxHeight;
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     return null;
   }
+
+  // Fill entire canvas with black (for projection)
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Fill the white box at the top
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, boxWidth, boxHeight);
+  ctx.fillStyle = 'black';
 
   const headingFontSize = Math.round(fontSize * 1.6);
   const lineHeight = headingFontSize * 1.2;
@@ -343,9 +359,6 @@ export function renderHeadingCanvas(
   );
   const maxTextWidth = Math.round(logoLayout.textWidth * 0.9);
 
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, boxWidth, boxHeight);
-  ctx.fillStyle = 'black';
   ctx.font = `bold ${headingFontSize}px ${fontName}`;
 
   const words = headingText.trim().split(/ +/);

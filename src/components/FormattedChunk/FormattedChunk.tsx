@@ -105,7 +105,7 @@ export const FormattedChunk: React.FC<FormattedChunkProps> = ({
   };
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder bg="white">
+    <Card padding="lg" radius="md" bg="transparent">
       <div ref={containerRef} />
       <Center mt="md">
         <Group>
